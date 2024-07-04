@@ -24,27 +24,27 @@ def fetch_page(driver, url):
 
 def parse_jobs(soup):
     """解析頁面內容並返回職位信息的列表，包括薪水"""
-    jobs = soup.find_all('article', class_='js-job-item')
+    jobs = soup.find_all('div', class_='job-item')
     job_list = []
     for job in jobs:
         try:
-            title = job.find('a', class_='js-job-link').text.strip()
-            company = job.get('data-cust-name')
-            location = job.find('ul', class_='b-list-inline b-clearfix job-list-intro b-content').find_all('li')[0].text.strip()
-            salary = job.find('span', class_='b-tag--default').text.strip() if job.find('span', class_='b-tag--default') else 'N/A'
+            title = job.find('h3', class_='job-title').text.strip()
+            company = job.find('div', class_='company-name').text.strip()
+            location = job.find('span', class_='location').text.strip()
+            salary = job.find('span', class_='salary').text.strip() if job.find('span', class_='salary') else 'N/A'
             job_list.append([title, company, location, salary])
         except AttributeError as e:
             print(f"Error parsing job: {e}")
             continue
     return job_list
 
-def save_to_csv(job_list, filename='104_list.csv'):
+def save_to_csv(job_list, filename='cakeresume_list.csv'):
     """將職位資訊保存到CSV文件"""
     df = pd.DataFrame(job_list, columns=['Title', 'Company', 'Location', 'Salary'])
     df.to_csv(filename, index=False, encoding='utf-8-sig')
 
 def main():
-    url = "https://www.104.com.tw/jobs/search/?ro=0&jobcat=2007000000&expansionType=area%2Cspec%2Ccom%2Cjob%2Cwf%2Cwktm&area=6001001000%2C6001002000%2C6001006000&order=17&asc=0&page=4&mode=s&jobsource=index_s&langFlag=0&langStatus=0&recommendJob=1&hotJob=1"
+    url = "https://www.cakeresume.com/jobs?location_list%5B0%5D=%E5%8F%B0%E5%8C%97%E5%B8%82%2C%20%E5%8F%B0%E7%81%A3&location_list%5B1%5D=%E6%96%B0%E5%8C%97%E5%B8%82%2C%20%E5%8F%B0%E7%81%A3&location_list%5B2%5D=%E6%96%B0%E7%AB%B9%E5%B8%82%2C%20%E5%8F%B0%E7%81%A3&profession%5B0%5D=it"
     driver = setup_driver()
     try:
         soup = fetch_page(driver, url)
