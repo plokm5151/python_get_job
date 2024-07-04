@@ -12,6 +12,7 @@ def setup_driver():
     options.add_argument('--headless')  # 無頭模式
     options.add_argument('--disable-gpu')
     options.add_argument('--no-sandbox')
+    options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
     return driver
 
@@ -22,23 +23,28 @@ def fetch_page(driver, url):
     return BeautifulSoup(driver.page_source, 'html.parser')
 
 def parse_jobs(soup):
-    """解析頁面內容並返回職位信息的列表"""
+    """解析頁面內容並返回職位信息的列表，包括薪水"""
     jobs = soup.find_all('article', class_='js-job-item')
     job_list = []
     for job in jobs:
-        title = job.find('a', class_='js-job-link').text.strip()
-        company = job.get('data-cust-name')
-        location = job.find('ul', class_='b-list-inline b-clearfix job-list-intro b-content').find_all('li')[0].text.strip()
-        job_list.append([title, company, location])
+        try:
+            title = job.find('a', class_='js-job-link').text.strip()
+            company = job.get('data-cust-name')
+            location = job.find('ul', class_='b-list-inline b-clearfix job-list-intro b-content').find_all('li')[0].text.strip()
+            salary = job.find('span', class_='b-tag--default').text.strip() if job.find('span', class_='b-tag--default') else 'N/A'
+            job_list.append([title, company, location, salary])
+        except AttributeError as e:
+            print(f"Error parsing job: {e}")
+            continue
     return job_list
 
 def save_to_csv(job_list, filename='job_list.csv'):
     """將職位信息保存到CSV文件"""
-    df = pd.DataFrame(job_list, columns=['Title', 'Company', 'Location'])
+    df = pd.DataFrame(job_list, columns=['Title', 'Company', 'Location', 'Salary'])
     df.to_csv(filename, index=False, encoding='utf-8-sig')
 
 def main():
-    url = "https://www.104.com.tw/jobs/search/?ro=0&jobcat=2007000000&kwop=7&expansionType=area%2Cspec%2Ccom%2Cjob%2Cwf%2Cwktm&area=6001001000%2C6001002000%2C6001006000%2C6001005000&order=12&asc=0&page=1&mode=s&showColumns=&langFlag=0&langStatus=0&recommendJob=1&hotJob=1&remoteWork=&irsTag=&label=&keyword=%E9%9F%8C%E9%AB%94%E5%B7%A5%E7%A8%8B%E5%B8%AB&jobsource=keyword2Keyword"
+    url = "https://www.104.com.tw/jobs/search/?ro=0&jobcat=2007000000&expansionType=area%2Cspec%2Ccom%2Cjob%2Cwf%2Cwktm&area=6001001000%2C6001002000%2C6001006000&order=17&asc=0&page=4&mode=s&jobsource=index_s&langFlag=0&langStatus=0&recommendJob=1&hotJob=1"
     driver = setup_driver()
     try:
         soup = fetch_page(driver, url)
